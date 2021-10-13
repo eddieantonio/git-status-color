@@ -1,7 +1,35 @@
 /**
- * Prints a 24-bit colour depending on the current branch name.
+ * git-status-color - prints a 24-bit colour depending on the current branch name.
  *
  * Uses `git rev-parse HEAD` to obtain the current commit SHA.
+ *
+ * In ZSH, you must turn on prompt substitution:
+ *
+ *      set -o PROMPT_SUBST
+ *
+ * Then you can set your PS1/PROMPT or RPROMPT as desired. For example,
+ *
+ *      RPROMPT="%{$(git-color-ref)%}$(git rev-parse --abbrev-ref HEAD)%k"
+ *
+ * If this sounds icky to you, that's because it is!
+ *
+ * Note about psvar and the %v prompt substitution:
+ *
+ * %v uses stradd() [1] to place whatever is in psvar[i] into the prompt.
+ *
+ * However, ZSH internally uses txtchangeset(), txtunset, and either
+ * tsetcap()/set_colour_attribute() [2] to set the prompt colour.
+ *
+ * Meanwhile, stadd(), prints "nice" characters in the output buffer [3]
+ * which encodes control characters [4]. So %v will not print your escape
+ * sequence! 😭
+ *
+ * Sources:
+ *
+ * [1]: https://github.com/zsh-users/zsh/blob/00d20ed15e18f5af682f0daec140d6b8383c479a/Src/prompt.c#L736-L743
+ * [2]: https://github.com/zsh-users/zsh/blob/00d20ed15e18f5af682f0daec140d6b8383c479a/Src/prompt.c#L511-L572
+ * [3]: https://github.com/zsh-users/zsh/blob/00d20ed15e18f5af682f0daec140d6b8383c479a/Src/prompt.c#L932-L998
+ * [4]: https://github.com/zsh-users/zsh/blob/00d20ed15e18f5af682f0daec140d6b8383c479a/Src/utils.c#L559-L564
  */
 
 #include <assert.h>
@@ -11,10 +39,10 @@
 #include <string.h>
 #include <sys/errno.h>
 
-// "Control Sequence Introducer"
-// https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_(Control_Sequence_Introducer)_sequences
+/* CSI: Control Sequence Introducer */
+/* https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_(Control_Sequence_Introducer)_sequences */
 #define CSI "\033["
-// "Select graphics rendition"
+/* "Select graphics rendition" */
 #define SGR "m"
 #define SET_WHITE_FOREGROUND "37"
 
